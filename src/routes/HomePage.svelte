@@ -1,17 +1,27 @@
 <script lang="ts">
 	import { createFFmpeg } from '@ffmpeg/ffmpeg';
 	import { onMount } from 'svelte';
-	import { convertToGif } from '../lib/ffmpeg-utils';
-	import { urlToMovFile } from '../lib/file-utils';
-	let ffmpeg = createFFmpeg({ log: true });
+	import { convertToGif, drawGrid, drawText, overlayImage } from '../lib/ffmpeg-utils';
+	import { urlToMovFile, urlToPngFile } from '../lib/file-utils';
+	let ffmpeg = createFFmpeg({
+		log: true,
+		// logger: (o) => {
+		// 	console.log(o);
+		// }
+		progress: (e) => {
+			console.log(e.ratio);
+		}
+	});
 
 	let video: HTMLVideoElement | null = null;
 	let file: File | null = null;
+	let imagefile: File | null = null;
 	let video2: File | null = null;
 	let gif: string | null = null;
 
 	onMount(() => {
 		load();
+		setImageFile();
 	});
 
 	$: {
@@ -26,8 +36,10 @@
 
 			video.src = URL.createObjectURL(file);
 			video = video;
-			console.log('ksdfciwsdiufh');
 		}
+	}
+	async function setImageFile() {
+		imagefile = await urlToPngFile('/g5.png');
 	}
 
 	async function load() {
@@ -53,16 +65,30 @@
 
 <button
 	on:click={async () => {
-		if (file) {
-			const ddd = await convertToGif(ffmpeg, file);
+		if (file && imagefile) {
+			const ddd = await drawText(ffmpeg, file);
 			gif = ddd;
 		} else {
 			console.error('video is not defined');
 		}
 	}}
-	class="bg-blue-500">Click me</button
+	class="bg-blue-500 hover:bg-blue-700 rounded py-2 px-4">Click me</button
+>
+
+<button
+	on:click={async () => {
+		if (file && imagefile) {
+			const ddd = await overlayImage(ffmpeg, file, imagefile);
+			gif = ddd;
+		} else {
+			console.error('video is not defined');
+		}
+	}}
+	class="bg-blue-500 hover:bg-blue-700 rounded py-2 px-4">Overlay image</button
 >
 
 {#if gif}
-	<img src={gif} width="250" alt="" />
+	<img src={gif} width="450" alt="" />
+
+	<video controls width="450" src={gif}> <track kind="captions" /></video>
 {/if}
